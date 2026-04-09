@@ -46,7 +46,7 @@ export const useChatStore = defineStore('chat', {
 
         this.addMessage({
           role:'ai',
-          content: aiReplay
+          content: aiReply
         })
 
       }catch(error){

@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
-const apiKey = import.meta.env.VITE_GROQ_API_KEY
+const apiKey = import.meta.env.VITE_API_KEY
 
 const request = axios.create({
   baseURL: 'https://api.groq.com/openai/v1',
   headers: {
-    Authorization: apiKey ? `Bearer ${apiKey}` : ''
+    Authorization: apiKey 
   }
 })
 
