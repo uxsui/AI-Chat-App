@@ -1,35 +1,52 @@
 <script setup>
+import { RouterLink } from 'vue-router'
 import ChatInput from '../components/ChatInput.vue'
-import { useChatStore } from '../store/chatStore';
-import ChatList from '../components/ChatList.vue';
+import { useChatStore } from '../store/chatStore'
+import ChatList from '../components/ChatList.vue'
+import ChatSidebar from '../components/ChatSidebar.vue'
 
-const chatStore=useChatStore()
-const handleClear=()=>{
-    if(confirm('确定要清空所有聊天记录吗？')){
-        chatStore.clearList()
-    }
+const chatStore = useChatStore()
+
+// 启动时把 legacy 的单会话数据迁移到 sessions 结构
+chatStore.ensureSessionsInitialized()
+
+const handleClear = () => {
+  if (confirm('确定要清空所有聊天记录吗？')) {
+    chatStore.clearList()
+  }
 }
 </script>
 
 <template>
-<div class="app-wrapper">
+  <div class="app-wrapper">
     <header class="header">
-      <div class="logo-area">
-        <span class="avatar">🥛</span>
-        <span class="title">豆奶 AI</span>
+      <div class="header-session">
+        <span class="header-label">对话窗口:</span>
+        <span class="header-title">{{ chatStore.currentSession?.title || '新对话' }}</span>
       </div>
-      <button class="clear-btn" @click="handleClear">清空</button>
+
+      <div class="header-actions">
+        <button class="icon-btn" type="button" aria-label="搜索">⌕</button>
+        <nav class="header-nav">
+          <RouterLink class="nav-link" to="/help">帮助</RouterLink>
+          <RouterLink class="nav-link" to="/about">关于豆奶</RouterLink>
+        </nav>
+        <button class="clear-btn" @click="handleClear">↺ 清空聊天</button>
+      </div>
     </header>
 
     <main class="chat-container">
-      <ChatList />
-      <div v-if="chatStore.isTyping" class="loading-status">豆奶正在思考中...</div>
+      <ChatSidebar />
+      <div class="chat-main">
+        <ChatList />
+        <div v-if="chatStore.isTyping" class="loading-status">豆奶正在思考中...</div>
+      </div>
     </main>
 
     <footer class="input-area">
       <ChatInput />
     </footer>
-</div>
+  </div>
 </template>
 
 <style scoped>
@@ -37,88 +54,118 @@ const handleClear=()=>{
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), rgba(244, 247, 251, 0.98) 42%, #f3f5f8 100%);
+  background: #f8fafc;
 }
 
 .header {
   position: sticky;
   top: 0;
   z-index: 10;
-  min-height: 62px;
+  min-height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 28px;
-  background: rgba(248, 250, 252, 0.8);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
-  backdrop-filter: blur(20px);
+  padding: 0 28px 0 24px;
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid #eef2f7;
+  backdrop-filter: blur(18px);
 }
 
-.logo-area {
+.header-session {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f6fb 100%);
-  color: #2563eb;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.title {
-  font-size: 17px;
+.header-label {
+  color: #94a3b8;
+  font-size: 12px;
   font-weight: 600;
-  color: #111827;
-  letter-spacing: 0.02em;
 }
 
+.header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn,
+.nav-link,
 .clear-btn {
   padding: 9px 15px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid #e5edf7;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.95);
   color: #475569;
   font-size: 13px;
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
-    background-color 0.2s ease;
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.icon-btn:hover,
+.nav-link:hover,
+.nav-link.router-link-active,
 .clear-btn:hover {
-  transform: translateY(-1px);
   background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  color: #1d4ed8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .chat-container {
   flex: 1;
-  width: min(860px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 24px 0 70px;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 110px;
   box-sizing: border-box;
+  display: flex;
+  gap: 0;
+  align-items: flex-start;
+}
+
+.chat-main {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 0 0;
+  background: #f8fafc;
 }
 
 .loading-status {
-  margin-top: 16px;
+  margin-top: 8px;
   color: #94a3b8;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
 }
 
 .input-area {
-  padding: 0 16px 24px;
+  padding: 0;
 }
 
 @media (max-width: 640px) {
@@ -126,13 +173,26 @@ const handleClear=()=>{
     padding: 0 16px;
   }
 
-  .chat-container {
-    width: calc(100% - 20px);
-    padding: 16px 0 132px;
+  .header-actions {
+    gap: 6px;
   }
 
-  .title {
-    font-size: 16px;
+  .header-nav {
+    gap: 6px;
+  }
+
+  .icon-btn,
+  .nav-link,
+  .clear-btn {
+    padding: 8px 12px;
+  }
+
+  .chat-container {
+    padding: 0 0 132px;
+  }
+
+  .header-title {
+    font-size: 13px;
   }
 }
 </style>

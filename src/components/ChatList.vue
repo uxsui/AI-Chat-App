@@ -1,7 +1,8 @@
 <script setup>
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useChatStore } from '../store/chatStore';
 import Markdown from 'vue-markdown-render'
+import logoUrl from '../assets/logo.png'
 
 const chatStore=useChatStore()
 const bottomRef = ref(null)
@@ -14,13 +15,22 @@ const scrollToBottom = async () => {
   })
 }
 
-watch(
-  () => chatStore.messages.length,
-  () => {
+// 流式逐字更新时，最后一条消息 content 会频繁变化；用 rAF 合并滚动，避免抖动/卡顿。
+let rafId = null
+const scheduleScroll = () => {
+  if (rafId) return
+  rafId = window.requestAnimationFrame(() => {
+    rafId = null
     scrollToBottom()
-  },
-  { immediate: true }
-)
+  })
+}
+
+const lastContent = computed(() => {
+  const msgs = chatStore.currentMessages
+  return msgs?.[msgs.length - 1]?.content
+})
+
+watch(lastContent, () => scheduleScroll(), { immediate: true })
 
 
 </script>
@@ -28,16 +38,26 @@ watch(
 <template>
   <div class="chat-list">
     <div 
-      v-for="msg in chatStore.messages" 
+      v-for="msg in chatStore.currentMessages" 
       :key="msg.id" 
       :class="['message-row',msg.role==='user'?'right':'left']">
-      <div class="content">
-        <Markdown :source="msg.content" />
+      <div v-if="msg.role === 'ai'" class="message-avatar">
+        <img :src="logoUrl" alt="豆奶 AI logo" class="message-avatar-logo" />
+      </div>
+      <div class="message-body">
+        <div class="content">
+          <Markdown :source="msg.content" />
+        </div>
       </div>
     </div>
 
-    <div v-if="chatStore.loading" class="message-row left">
-      <div class="bubble loading-dots">AI 正在思考中...</div>
+    <div v-if="chatStore.isTyping" class="message-row left">
+      <div class="message-avatar">
+        <img :src="logoUrl" alt="豆奶 AI logo" class="message-avatar-logo" />
+      </div>
+      <div class="message-body">
+        <div class="content loading-dots">AI 正在思考中...</div>
+      </div>
     </div>
 
     <div ref="bottomRef" class="chat-bottom-anchor"></div>
@@ -144,13 +164,19 @@ watch(
 .chat-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 28px;
   min-height: 100%;
+  width: min(980px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 8px 0 140px;
+  box-sizing: border-box;
 }
 
 .message-row {
   display: flex;
   width: 100%;
+  gap: 14px;
+  align-items: flex-start;
 }
 
 .right {
@@ -161,25 +187,61 @@ watch(
   justify-content: flex-start;
 }
 
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  border: 1px solid #dbe7fb;
+}
+
+.message-avatar-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.right .message-avatar {
+  display: none;
+}
+
+.message-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(78%, 760px);
+}
+
+.right .message-body {
+  align-items: flex-end;
+}
+
 .content {
-  max-width: min(72%, 680px);
-  padding: 14px 18px;
+  width: 100%;
+  padding: 16px 18px;
   border-radius: 22px;
   word-break: break-word;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  box-sizing: border-box;
 }
 
 .right .content {
-  background: linear-gradient(180deg, #dbeafe 0%, #cfe3ff 100%);
-  color: #1e3a8a;
-  border-bottom-right-radius: 10px;
+  background: linear-gradient(180deg, #2f6cf6 0%, #2563eb 100%);
+  color: #ffffff;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.2);
 }
 
 .left .content {
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   color: #1f2937;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-bottom-left-radius: 10px;
+  border: 1px solid #e8eef6;
+  border-bottom-left-radius: 8px;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.05);
 }
 
 .loading-dots {
@@ -220,8 +282,16 @@ watch(
 }
 
 @media (max-width: 640px) {
+  .chat-list {
+    width: calc(100% - 20px);
+    padding-bottom: 156px;
+  }
+
+  .message-body {
+    max-width: 90%;
+  }
+
   .content {
-    max-width: 88%;
     padding: 12px 14px;
     font-size: 14px;
   }
