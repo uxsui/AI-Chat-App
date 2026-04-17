@@ -7,7 +7,7 @@ import ChatSidebar from '../components/ChatSidebar.vue'
 
 const chatStore = useChatStore()
 
-// 启动时把 legacy 的单会话数据迁移到 sessions 结构
+// 建议：如果这是全局初始化，移到 App.vue 更好
 chatStore.ensureSessionsInitialized()
 
 const handleClear = () => {
@@ -26,12 +26,12 @@ const handleClear = () => {
       </div>
 
       <div class="header-actions">
-        <button class="icon-btn" type="button" aria-label="搜索">⌕</button>
+        <button class="action-item icon-btn" type="button">⌕</button>
         <nav class="header-nav">
-          <RouterLink class="nav-link" to="/help">帮助</RouterLink>
-          <RouterLink class="nav-link" to="/about">关于豆奶</RouterLink>
+          <RouterLink class="action-item" to="/help">帮助</RouterLink>
+          <RouterLink class="action-item" to="/about">关于豆奶</RouterLink>
         </nav>
-        <button class="clear-btn" @click="handleClear">↺ 清空聊天</button>
+        <button class="action-item clear-btn" @click="handleClear">↺ 清空聊天</button>
       </div>
     </header>
 
@@ -39,7 +39,6 @@ const handleClear = () => {
       <ChatSidebar />
       <div class="chat-main">
         <ChatList />
-        <div v-if="chatStore.isTyping" class="loading-status">豆奶正在思考中...</div>
       </div>
     </main>
 
@@ -50,6 +49,7 @@ const handleClear = () => {
 </template>
 
 <style scoped>
+/* 1. 基础布局简化 */
 .app-wrapper {
   display: flex;
   flex-direction: column;
@@ -61,50 +61,19 @@ const handleClear = () => {
   position: sticky;
   top: 0;
   z-index: 10;
-  min-height: 64px;
+  height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 28px 0 24px;
+  padding: 0 24px;
   background: rgba(255, 255, 255, 0.82);
   border-bottom: 1px solid #eef2f7;
   backdrop-filter: blur(18px);
 }
 
-.header-session {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-label {
-  color: #94a3b8;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.header-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.icon-btn,
-.nav-link,
-.clear-btn {
-  padding: 9px 15px;
+/* 2. 提取公共按钮样式 */
+.action-item {
+  padding: 8px 14px;
   border: 1px solid #e5edf7;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.95);
@@ -112,13 +81,15 @@ const handleClear = () => {
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
+  transition: all 0.2s ease;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease;
+}
+
+.action-item:hover, .router-link-active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .icon-btn {
@@ -127,72 +98,34 @@ const handleClear = () => {
   padding: 0;
   display: grid;
   place-items: center;
-  font-size: 16px;
 }
 
-.icon-btn:hover,
-.nav-link:hover,
-.nav-link.router-link-active,
-.clear-btn:hover {
-  background: #ffffff;
-  color: #1d4ed8;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+/* 3. 布局结构 */
+.header-session, .header-actions, .header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.header-label { color: #94a3b8; font-size: 12px; font-weight: 600; }
+.header-title { font-size: 14px; font-weight: 600; color: #0f172a; }
 
 .chat-container {
   flex: 1;
-  width: 100%;
-  margin: 0;
-  padding: 0 0 110px;
-  box-sizing: border-box;
   display: flex;
-  gap: 0;
-  align-items: flex-start;
+  padding-bottom: 110px; /* 为底部输入框留空 */
 }
 
 .chat-main {
   flex: 1;
   min-width: 0;
-  padding: 14px 0 0;
   background: #f8fafc;
 }
 
-.loading-status {
-  margin-top: 8px;
-  color: #94a3b8;
-  font-size: 12px;
-  text-align: center;
-}
-
-.input-area {
-  padding: 0;
-}
-
+/* 4. 移动端适配精简 */
 @media (max-width: 640px) {
-  .header {
-    padding: 0 16px;
-  }
-
-  .header-actions {
-    gap: 6px;
-  }
-
-  .header-nav {
-    gap: 6px;
-  }
-
-  .icon-btn,
-  .nav-link,
-  .clear-btn {
-    padding: 8px 12px;
-  }
-
-  .chat-container {
-    padding: 0 0 132px;
-  }
-
-  .header-title {
-    font-size: 13px;
-  }
+  .header { padding: 0 12px; }
+  .chat-container { padding-bottom: 132px; }
+  .action-item { padding: 6px 10px; font-size: 12px; }
 }
 </style>

@@ -51,15 +51,6 @@ watch(lastContent, () => scheduleScroll(), { immediate: true })
       </div>
     </div>
 
-    <div v-if="chatStore.isTyping" class="message-row left">
-      <div class="message-avatar">
-        <img :src="logoUrl" alt="豆奶 AI logo" class="message-avatar-logo" />
-      </div>
-      <div class="message-body">
-        <div class="content loading-dots">AI 正在思考中...</div>
-      </div>
-    </div>
-
     <div ref="bottomRef" class="chat-bottom-anchor"></div>
   </div>
 
@@ -168,7 +159,7 @@ watch(lastContent, () => scheduleScroll(), { immediate: true })
   min-height: 100%;
   width: min(980px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 8px 0 140px;
+  padding: 8px 0 220px;
   box-sizing: border-box;
 }
 
@@ -279,6 +270,7 @@ watch(lastContent, () => scheduleScroll(), { immediate: true })
 .chat-bottom-anchor {
   width: 100%;
   height: 1px;
+  scroll-margin-bottom: 220px;
 }
 
 @media (max-width: 640px) {
