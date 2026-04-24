@@ -1,17 +1,93 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch, onMounted } from 'vue';
 import { useChatStore } from '../store/chatStore';
 import Markdown from 'vue-markdown-render'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/atom-one-dark.css'
 import logoUrl from '../assets/logo.png'
+
+const props = defineProps({
+  searchKeyword: {
+    type: String,
+    default: ''
+  }
+})
 
 const chatStore=useChatStore()
 const bottomRef = ref(null)
+const chatListRef = ref(null)
 
 const scrollToBottom = async () => {
   await nextTick()
   bottomRef.value?.scrollIntoView({
     behavior: 'smooth',
     block: 'end'
+  })
+}
+
+// 应用代码高亮
+const highlightCode = async () => {
+  await nextTick()
+  if (chatListRef.value) {
+    const codeBlocks = chatListRef.value.querySelectorAll('pre code')
+    codeBlocks.forEach(block => {
+      if (!block.classList.contains('hljs')) {
+        hljs.highlightElement(block)
+      }
+    })
+  }
+}
+
+// 搜索高亮功能
+const highlightSearchKeyword = async () => {
+  await nextTick()
+  if (!chatListRef.value || !props.searchKeyword.trim()) {
+    // 清除之前的高亮
+    const highlighted = chatListRef.value?.querySelectorAll('.search-highlight')
+    highlighted?.forEach(el => {
+      const parent = el.parentNode
+      const text = el.textContent
+      const textNode = document.createTextNode(text)
+      parent.replaceChild(textNode, el)
+      parent.normalize()
+    })
+    return
+  }
+
+  const keyword = props.searchKeyword.trim()
+  const regex = new RegExp(`(${keyword})`, 'gi')
+  
+  const walker = document.createTreeWalker(
+    chatListRef.value,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  )
+
+  const nodesToReplace = []
+  let node
+  while (node = walker.nextNode()) {
+    if (regex.test(node.textContent)) {
+      nodesToReplace.push(node)
+    }
+  }
+
+  nodesToReplace.forEach(node => {
+    const fragment = document.createDocumentFragment()
+    const parts = node.textContent.split(new RegExp(`(${keyword})`, 'gi'))
+    
+    parts.forEach(part => {
+      if (part.toLowerCase() === keyword.toLowerCase()) {
+        const mark = document.createElement('mark')
+        mark.className = 'search-highlight'
+        mark.textContent = part
+        fragment.appendChild(mark)
+      } else if (part) {
+        fragment.appendChild(document.createTextNode(part))
+      }
+    })
+    
+    node.parentNode.replaceChild(fragment, node)
   })
 }
 
@@ -22,6 +98,7 @@ const scheduleScroll = () => {
   rafId = window.requestAnimationFrame(() => {
     rafId = null
     scrollToBottom()
+    highlightCode()
   })
 }
 
@@ -32,11 +109,19 @@ const lastContent = computed(() => {
 
 watch(lastContent, () => scheduleScroll(), { immediate: true })
 
+watch(() => props.searchKeyword, () => {
+  highlightSearchKeyword()
+})
+
+onMounted(() => {
+  highlightCode()
+})
+
 
 </script>
 
 <template>
-  <div class="chat-list">
+  <div class="chat-list" ref="chatListRef">
     <div 
       v-for="msg in chatStore.currentMessages" 
       :key="msg.id" 
@@ -271,6 +356,22 @@ watch(lastContent, () => scheduleScroll(), { immediate: true })
   width: 100%;
   height: 1px;
   scroll-margin-bottom: 220px;
+}
+
+/* 搜索高亮样式 */
+.search-highlight {
+  background-color: #fef08a;
+  color: #0f172a;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(254, 240, 138, 0.5);
+}
+
+.right .search-highlight {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  box-shadow: none;
 }
 
 @media (max-width: 640px) {

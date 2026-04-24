@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ChatInput from '../components/ChatInput.vue'
 import { useChatStore } from '../store/chatStore'
@@ -6,6 +7,8 @@ import ChatList from '../components/ChatList.vue'
 import ChatSidebar from '../components/ChatSidebar.vue'
 
 const chatStore = useChatStore()
+const searchActive = ref(false)
+const searchKeyword = ref('')
 
 // 建议：如果这是全局初始化，移到 App.vue 更好
 chatStore.ensureSessionsInitialized()
@@ -13,6 +16,27 @@ chatStore.ensureSessionsInitialized()
 const handleClear = () => {
   if (confirm('确定要清空所有聊天记录吗？')) {
     chatStore.clearList()
+  }
+}
+
+const toggleSearch = () => {
+  searchActive.value = !searchActive.value
+  if (searchActive.value) {
+    setTimeout(() => {
+      document.querySelector('.search-input')?.focus()
+    }, 0)
+  } else {
+    searchKeyword.value = ''
+  }
+}
+
+const handleSearchInput = (e) => {
+  searchKeyword.value = e.target.value
+}
+
+const handleSearchKeydown = (e) => {
+  if (e.key === 'Escape') {
+    toggleSearch()
   }
 }
 </script>
@@ -26,7 +50,18 @@ const handleClear = () => {
       </div>
 
       <div class="header-actions">
-        <button class="action-item icon-btn" type="button">⌕</button>
+        <div v-if="searchActive" class="search-box">
+          <input 
+            class="search-input"
+            type="text"
+            placeholder="搜索对话..."
+            :value="searchKeyword"
+            @input="handleSearchInput"
+            @keydown="handleSearchKeydown"
+          />
+          <span class="search-close" @click="toggleSearch">×</span>
+        </div>
+        <button class="action-item icon-btn" type="button" @click="toggleSearch" :class="{ active: searchActive }">⌕</button>
         <nav class="header-nav">
           <RouterLink class="action-item" to="/help">帮助</RouterLink>
           <RouterLink class="action-item" to="/about">关于豆奶</RouterLink>
@@ -38,7 +73,7 @@ const handleClear = () => {
     <main class="chat-container">
       <ChatSidebar />
       <div class="chat-main">
-        <ChatList />
+        <ChatList :searchKeyword="searchKeyword" />
       </div>
     </main>
 
@@ -110,6 +145,51 @@ const handleClear = () => {
 .header-label { color: #94a3b8; font-size: 12px; font-weight: 600; }
 .header-title { font-size: 14px; font-weight: 600; color: #0f172a; }
 
+/* 搜索框样式 */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: #ffffff;
+  border: 1px solid #e5edf7;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.search-input {
+  width: 200px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-close {
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.2s ease;
+}
+
+.search-close:hover {
+  color: #0f172a;
+}
+
+.icon-btn.active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
 .chat-container {
   flex: 1;
   display: flex;
@@ -119,6 +199,7 @@ const handleClear = () => {
 .chat-main {
   flex: 1;
   min-width: 0;
+  margin-left: 248px;
   background: #f8fafc;
 }
 
@@ -127,5 +208,6 @@ const handleClear = () => {
   .header { padding: 0 12px; }
   .chat-container { padding-bottom: 132px; }
   .action-item { padding: 6px 10px; font-size: 12px; }
+  .chat-main { margin-left: 0; }
 }
 </style>

@@ -26,6 +26,18 @@ export const useChatStore = defineStore('chat', {
       const session = this.currentSession
       if (session?.messages) return session.messages
       return this.messages
+    },
+    // 获取用于API上下文的消息（最近10轮，共20条消息）
+    contextMessages() {
+      const session = this.currentSession
+      if (!session?.messages) return []
+      const allMessages = session.messages
+      // 最多保留20条消息（10轮对话）
+      return allMessages.slice(-20)
+    },
+    // 获取当前上下文中的消息数量
+    contextMessageCount() {
+      return this.contextMessages.length
     }
   },
   actions: {
@@ -163,6 +175,17 @@ export const useChatStore = defineStore('chat', {
       const aiMsgIndex = session.messages.length
       session.messages.push({ id: Date.now(), role: 'ai', content: '', timestamp: new Date() })
 
+      // 获取最近10轮对话的消息（共20条：10个用户消息 + 10个AI消息）
+      const getContextMessages = () => {
+        const allMessages = session.messages
+        // 最多保留20条消息（10轮对话）
+        const recentMessages = allMessages.slice(-20)
+        return recentMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      }
+
       // 使用 AbortController 实现可取消（不放进 state，避免持久化/序列化问题）
       this.abortController = new AbortController()
 
@@ -175,7 +198,7 @@ export const useChatStore = defineStore('chat', {
           },
           body: JSON.stringify({
             model: DEFAULT_MODEL,
-            messages: [{ role: 'user', content }],
+            messages: getContextMessages(),
             stream: true
           }),
           signal: this.abortController.signal

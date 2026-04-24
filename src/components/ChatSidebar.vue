@@ -64,7 +64,7 @@ const removeChat = id => {
         :class="{ active: s.id === chatStore.currentSessionId }"
         @click="setActive(s.id)"
       >
-        <div class="sidebar-item-icon">□</div>
+        <div class="sidebar-item-icon">💬</div>
         <div class="sidebar-item-content">
           <div class="sidebar-item-title">
             {{ s.title }}
@@ -88,15 +88,18 @@ const removeChat = id => {
 
 <style scoped>
 .chat-sidebar {
+  position: fixed;
+  left: 0;
+  top: 64px;
   width: 248px;
-  flex-shrink: 0;
-  min-height: calc(100vh - 64px);
+  height: calc(100vh - 64px);
   padding: 18px 12px;
   box-sizing: border-box;
   background: #ffffff;
   border-right: 1px solid #eef2f7;
   display: flex;
   flex-direction: column;
+  z-index: 9;
 }
 
 .brand-row {
@@ -138,12 +141,12 @@ const removeChat = id => {
 
 .new-chat-btn {
   width: 100%;
-  padding: 11px 14px;
+  padding: 14px 16px;
   border-radius: 14px;
   border: none;
   background: linear-gradient(180deg, #2f6cf6 0%, #2563eb 100%);
   color: #ffffff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(37, 99, 235, 0.26);
@@ -162,7 +165,7 @@ const removeChat = id => {
 }
 
 .new-chat-plus {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   display: inline-flex;
   transition: transform 0.24s ease;
@@ -224,7 +227,7 @@ const removeChat = id => {
 .sidebar-item-icon {
   padding-top: 2px;
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .sidebar-item-content {
